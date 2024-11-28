@@ -1,66 +1,67 @@
-## Foundry
+# Smart Lottery Contract
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+A decentralized and verifiably random lottery system built with Solidity and Chainlink VRF.
 
-Foundry consists of:
+## Overview
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+SmartLottery is a decentralized lottery system that allows users to:
+- Create and participate in multiple concurrent lottery instances
+- Enter lotteries by purchasing tickets
+- Have winners selected automatically and fairly using Chainlink's Verifiable Random Function (VRF)
+- Operate lotteries with customizable parameters like ticket price and expiration time
 
-## Documentation
+## Key Features
 
-https://book.getfoundry.sh/
+- **Multiple Concurrent Lotteries**: Support for running multiple lottery instances simultaneously
+- **Verifiable Randomness**: Uses Chainlink VRF for provably fair winner selection
+- **Customizable Parameters**: Configurable ticket prices and expiration times
+- **Role-Based Access**: Lottery operators have special privileges for managing their lotteries
+- **Automated Winner Selection**: Winners are selected and paid out automatically
+- **Gas Efficient**: Optimized for minimal gas consumption
 
-## Usage
+## Contract Architecture
 
-### Build
+The system consists of the following main components:
 
-```shell
-$ forge build
-```
+- `SmartLottery.sol`: The main contract handling lottery logic
+- `HelperConfig.sol`: Configuration helper for different networks
+- `DeployLottery.s.sol`: Deployment script
 
-### Test
+## Technical Details
 
-```shell
-$ forge test
-```
+### Key Dependencies
+- Solidity ^0.8.20
+- Chainlink VRF V2 Plus
+- Foundry for development and testing
 
-### Format
+### Network Configurations
+- Supports Sepolia testnet and local development
+- Configurable VRF parameters per network
 
-```shell
-$ forge fmt
-```
+## Development
 
-### Gas Snapshots
+### Prerequisites
+- Foundry
+- Chainlink VRF Subscription (for live networks)
 
-```shell
-$ forge snapshot
-```
+### Installation
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/smart-lottery
+   cd smart-lottery
+   ```
 
-### Anvil
+2. Install dependencies:
+   ```bash
+   forge install
+   ```
 
-```shell
-$ anvil
-```
+3. Build the project:
+   ```bash
+   forge build
+   ```
 
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+4. Run tests:
+   ```bash
+   forge test
+   ```

@@ -3,8 +3,8 @@
 pragma solidity ^0.8.20;
 
 import {Script} from "../lib/forge-std/src/Script.sol";
-import {VRFCoordinatorV2_5Mock} from "../lib/chainlink-brownie-contracts/contracts/src/v0.8/vrf/mocks/VRFCoordinatorV2_5Mock.sol";
-
+import {VRFCoordinatorV2_5Mock} from
+    "../lib/chainlink-brownie-contracts/contracts/src/v0.8/vrf/mocks/VRFCoordinatorV2_5Mock.sol";
 
 contract HelperConfig is Script {
     error HelperConfig__InvalidChainId();
@@ -31,7 +31,7 @@ contract HelperConfig is Script {
     }
 
     function getConfigByChainId(uint256 chainId) public returns (NetworkConfig memory) {
-        if(networkConfigs[chainId].vrfCoordinatorV2 != address(0)) {
+        if (networkConfigs[chainId].vrfCoordinatorV2 != address(0)) {
             return networkConfigs[chainId];
         } else if (chainId == LOCAL_CHAIN_ID) {
             return getAnvilConfig();
@@ -54,7 +54,8 @@ contract HelperConfig is Script {
             return localNetworkConfig;
         }
         vm.startBroadcast();
-        VRFCoordinatorV2_5Mock vrfCoordinatorMock = new VRFCoordinatorV2_5Mock(MOCK_BASE_FEE, MOCK_GAS_PRICE, MOCK_WEI_PER_UNIT_LINK);
+        VRFCoordinatorV2_5Mock vrfCoordinatorMock =
+            new VRFCoordinatorV2_5Mock(MOCK_BASE_FEE, MOCK_GAS_PRICE, MOCK_WEI_PER_UNIT_LINK);
         vm.stopBroadcast();
         localNetworkConfig = NetworkConfig({
             subscriptionId: 0,

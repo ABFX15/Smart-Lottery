@@ -2,9 +2,12 @@
 
 pragma solidity ^0.8.20;
 
-import {VRFConsumerBaseV2Plus} from "lib/foundry-chainlink-toolkit/lib/chainlink-brownie-contracts/contracts/src/v0.8/dev/vrf/VRFConsumerBaseV2Plus.sol";
-import {VRFV2PlusClient} from "lib/foundry-chainlink-toolkit/lib/chainlink-brownie-contracts/contracts/src/v0.8/dev/vrf/libraries/VRFV2PlusClient.sol";
-import {VRFCoordinatorV2Interface} from "lib/chainlink-brownie-contracts/contracts/src/v0.8/vrf/interfaces/VRFCoordinatorV2Interface.sol";
+import {VRFConsumerBaseV2Plus} from
+    "lib/foundry-chainlink-toolkit/lib/chainlink-brownie-contracts/contracts/src/v0.8/dev/vrf/VRFConsumerBaseV2Plus.sol";
+import {VRFV2PlusClient} from
+    "lib/foundry-chainlink-toolkit/lib/chainlink-brownie-contracts/contracts/src/v0.8/dev/vrf/libraries/VRFV2PlusClient.sol";
+import {VRFCoordinatorV2Interface} from
+    "lib/chainlink-brownie-contracts/contracts/src/v0.8/vrf/interfaces/VRFCoordinatorV2Interface.sol";
 
 /**
  * @title SmartLottery
@@ -69,12 +72,7 @@ contract SmartLottery is VRFConsumerBaseV2Plus {
     /*//////////////////////////////////////////////////////////////
                                  EVENTS
     //////////////////////////////////////////////////////////////*/
-    event LotteryCreated(
-        uint256 indexed lotteryId,
-        uint256 ticketPrice,
-        uint256 expiration,
-        address operator
-    );
+    event LotteryCreated(uint256 indexed lotteryId, uint256 ticketPrice, uint256 expiration, address operator);
     event PlayerEntered(uint256 indexed lotteryId, address indexed player);
     event WinnerPicked(uint256 indexed lotteryId, address indexed winner, uint256 prize);
     event RequestedRandomness(uint256 indexed lotteryId, uint256 indexed requestId);
@@ -112,12 +110,9 @@ contract SmartLottery is VRFConsumerBaseV2Plus {
     /*//////////////////////////////////////////////////////////////
                               CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
-    constructor(
-        address vrfCoordinatorV2,
-        uint64 subscriptionId,
-        bytes32 keyHash,
-        uint32 callbackGasLimit
-    ) VRFConsumerBaseV2Plus(vrfCoordinatorV2) {
+    constructor(address vrfCoordinatorV2, uint64 subscriptionId, bytes32 keyHash, uint32 callbackGasLimit)
+        VRFConsumerBaseV2Plus(vrfCoordinatorV2)
+    {
         i_vrfCoordinator = vrfCoordinatorV2;
         i_subscriptionId = subscriptionId;
         i_keyHash = keyHash;
@@ -133,11 +128,7 @@ contract SmartLottery is VRFConsumerBaseV2Plus {
      * @param _ticketPrice The price of a single ticket in wei
      * @param _expiration The expiration timestamp of the lottery
      */
-    function createLottery(
-        uint256 _lotteryId,
-        uint256 _ticketPrice,
-        uint256 _expiration
-    ) external {
+    function createLottery(uint256 _lotteryId, uint256 _ticketPrice, uint256 _expiration) external {
         if (_ticketPrice == 0) revert SmartLottery__InvalidTicketPrice();
         if (_expiration <= block.timestamp) revert SmartLottery__LotteryExpired();
         if (s_lotteries[_lotteryId].operator != address(0)) {
@@ -162,10 +153,7 @@ contract SmartLottery is VRFConsumerBaseV2Plus {
      * @notice Allows a player to enter a lottery by sending the required funds
      * @param _lotteryId The ID of the lottery to enter
      */
-    function enterLottery(uint256 _lotteryId) external payable 
-        lotteryExists(_lotteryId) 
-        lotteryOpen(_lotteryId) 
-    {
+    function enterLottery(uint256 _lotteryId) external payable lotteryExists(_lotteryId) lotteryOpen(_lotteryId) {
         Lottery storage lottery = s_lotteries[_lotteryId];
         if (msg.value < lottery.ticketPrice) {
             revert SmartLottery__NotEnoughFunds();
@@ -181,10 +169,11 @@ contract SmartLottery is VRFConsumerBaseV2Plus {
      * @notice Picks a winner for the specified lottery
      * @param _lotteryId The ID of the lottery to pick a winner for
      */
-    function pickWinner(uint256 _lotteryId) external 
-        lotteryExists(_lotteryId) 
+    function pickWinner(uint256 _lotteryId)
+        external
+        lotteryExists(_lotteryId)
         lotteryOpen(_lotteryId)
-        onlyOperator(_lotteryId) 
+        onlyOperator(_lotteryId)
     {
         Lottery storage lottery = s_lotteries[_lotteryId];
         if (lottery.entrants.length == 0) revert SmartLottery__NoEntrants();
@@ -192,11 +181,7 @@ contract SmartLottery is VRFConsumerBaseV2Plus {
         lottery.state = LotteryState.CALCULATING_WINNER;
 
         uint256 requestId = VRFCoordinatorV2Interface(i_vrfCoordinator).requestRandomWords(
-            i_keyHash,
-            i_subscriptionId,
-            REQUEST_CONFIRMATIONS,
-            i_callbackGasLimit,
-            NUM_WORDS
+            i_keyHash, i_subscriptionId, REQUEST_CONFIRMATIONS, i_callbackGasLimit, NUM_WORDS
         );
         s_requestIdToLotteryId[requestId] = _lotteryId;
 
@@ -208,31 +193,36 @@ contract SmartLottery is VRFConsumerBaseV2Plus {
      * @param requestId The ID of the request
      * @param randomWords The array of random words returned by the VRF
      */
-    function fulfillRandomWords(
-        uint256 requestId,
-        uint256[] memory randomWords
-    ) internal override {
+    function fulfillRandomWords(uint256 requestId, uint256[] memory randomWords) internal override {
         uint256 lotteryId = s_requestIdToLotteryId[requestId];
         Lottery storage lottery = s_lotteries[lotteryId];
-        
+
         uint256 indexOfWinner = randomWords[0] % lottery.entrants.length;
         address payable winner = lottery.entrants[indexOfWinner];
-        
+
         lottery.winner = winner;
         lottery.state = LotteryState.CLOSED;
-        
+
         uint256 prize = lottery.prizePool;
         lottery.prizePool = 0;
 
-        
-
-        (bool success, ) = winner.call{value: prize}("");
+        (bool success,) = winner.call{value: prize}("");
         if (!success) {
             revert SmartLottery__TransferFailed();
         }
-        
+
         emit WinnerPicked(lotteryId, winner, prize);
     }
+
+    function withdraw() external onlyOwner {
+        (bool success,) = msg.sender.call{value: address(this).balance}("");
+        if (!success) {
+            revert SmartLottery__TransferFailed();
+        }
+    }
+
+    receive() external payable {}
+    fallback() external payable {}
 
     /*//////////////////////////////////////////////////////////////
                               VIEW FUNCTIONS
@@ -248,7 +238,9 @@ contract SmartLottery is VRFConsumerBaseV2Plus {
      * @return entrantsCount The number of entrants in the lottery
      * @return prizePool The prize pool of the lottery
      */
-    function getLottery(uint256 _lotteryId) external view 
+    function getLottery(uint256 _lotteryId)
+        external
+        view
         returns (
             uint256 ticketPrice,
             uint256 expiration,
@@ -257,7 +249,7 @@ contract SmartLottery is VRFConsumerBaseV2Plus {
             LotteryState state,
             uint256 entrantsCount,
             uint256 prizePool
-        ) 
+        )
     {
         Lottery storage lottery = s_lotteries[_lotteryId];
         return (

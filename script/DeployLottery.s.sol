@@ -7,8 +7,8 @@ import {HelperConfig} from "./HelperConfig.s.sol";
 import {SmartLottery} from "../src/Lottery.sol";
 
 contract DeployLottery is Script {
-    function run() public {
-
+    function run() public returns (SmartLottery, HelperConfig) {
+        return deployContract();
     }
 
     function deployContract() public returns (SmartLottery, HelperConfig) {
@@ -16,7 +16,8 @@ contract DeployLottery is Script {
         HelperConfig.NetworkConfig memory config = helperConfig.getConfig();
 
         vm.startBroadcast();
-        SmartLottery smartLottery = new SmartLottery(config.vrfCoordinatorV2, config.subscriptionId, config.keyHash, config.callbackGasLimit);
+        SmartLottery smartLottery =
+            new SmartLottery(config.vrfCoordinatorV2, config.subscriptionId, config.keyHash, config.callbackGasLimit);
         vm.stopBroadcast();
         return (smartLottery, helperConfig);
     }

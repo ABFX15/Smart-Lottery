@@ -10,10 +10,11 @@ contract HelperConfig is Script {
     error HelperConfig__InvalidChainId();
 
     struct NetworkConfig {
-        uint64 subscriptionId;
         address vrfCoordinatorV2;
+        uint64 subscriptionId;
         bytes32 keyHash;
         uint32 callbackGasLimit;
+        uint256 minimumTicketPrice;
     }
 
     NetworkConfig public localNetworkConfig;
@@ -42,10 +43,11 @@ contract HelperConfig is Script {
 
     function getSepoliaEthConfig() public pure returns (NetworkConfig memory) {
         return NetworkConfig({
+            vrfCoordinatorV2: 0x8103B0A8A00be2DDC778e6e7eaa21791Cd364625,
             subscriptionId: 0,
-            vrfCoordinatorV2: 0x9DdfaCa8183c41ad55329BdeeD9F6A8d53168B1B,
-            keyHash: 0x787d74caea10b2b357790d5b5247c2f63d1d91572a9846f780606e4d953677ae,
-            callbackGasLimit: 500000
+            keyHash: 0x474e34a077df58807dbe9c96d3c009b23b3c6d0cce433e59bbf5b34f823bc56c,
+            callbackGasLimit: 500000,
+            minimumTicketPrice: 1 ether
         });
     }
 
@@ -61,7 +63,8 @@ contract HelperConfig is Script {
             subscriptionId: 0,
             vrfCoordinatorV2: address(vrfCoordinatorMock),
             keyHash: 0x787d74caea10b2b357790d5b5247c2f63d1d91572a9846f780606e4d953677ae,
-            callbackGasLimit: 500000
+            callbackGasLimit: 500000,
+            minimumTicketPrice: 1 ether
         });
         return localNetworkConfig;
     }

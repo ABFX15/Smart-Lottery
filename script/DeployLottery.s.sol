@@ -7,18 +7,19 @@ import {HelperConfig} from "./HelperConfig.s.sol";
 import {SmartLottery} from "../src/Lottery.sol";
 
 contract DeployLottery is Script {
-    function run() public returns (SmartLottery, HelperConfig) {
-        return deployContract();
-    }
-
-    function deployContract() public returns (SmartLottery, HelperConfig) {
+    function run() external returns (SmartLottery, HelperConfig) {
         HelperConfig helperConfig = new HelperConfig();
         HelperConfig.NetworkConfig memory config = helperConfig.getConfig();
 
         vm.startBroadcast();
-        SmartLottery smartLottery =
-            new SmartLottery(config.vrfCoordinatorV2, config.subscriptionId, config.keyHash, config.callbackGasLimit);
+        SmartLottery lottery = new SmartLottery(
+            config.vrfCoordinatorV2,
+            config.subscriptionId,
+            config.keyHash,
+            config.callbackGasLimit,
+            config.minimumTicketPrice
+        );
         vm.stopBroadcast();
-        return (smartLottery, helperConfig);
+        return (lottery, helperConfig);
     }
 }

@@ -12,8 +12,10 @@ contract LotteryTest is Test {
     HelperConfig public helperConfig;
 
     address public user = makeAddr("user");
+    address public user2 = makeAddr("user2");
     uint256 public constant STARTING_BALANCE = 10 ether;
     uint256 public constant TICKET_PRICE = 1 ether;
+    uint256 public constant INVALID_PRICE = 0.1 ether;
     uint256 public constant LOTTERY_ID = 1;
 
     // VRF Configuration
@@ -36,53 +38,76 @@ contract LotteryTest is Test {
         callbackGasLimit = config.callbackGasLimit;
     }
 
-    // function testCreatesALottery() public {
-    //     uint256 expiration = block.timestamp + 1 days;
+    modifier lotteryCreated() {
+        vm.prank(user);
+        lottery.createLottery(LOTTERY_ID, TICKET_PRICE, 1 days);
+        _;
+    }
 
-    //     // Act: Create a lottery
-    //     lottery.createLottery(LOTTERY_ID, TICKET_PRICE, expiration);
-
-    //     // Assert: Check lottery details
-    //     (
-    //         uint256 ticketPrice,
-    //         uint256 expiration,
-    //         address operator,
-    //         address winner,
-    //         SmartLottery.LotteryState state,
-    //         uint256 entrantsCount,
-    //         uint256 prizePool
-    //     ) = lottery.getLottery(LOTTERY_ID);
-
-    //     assertEq(ticketPrice, TICKET_PRICE, "Ticket price mismatch");
-    //     assertEq(expiration, block.timestamp + 1 days, "Expiration mismatch");
-    //     assertEq(operator, user, "Operator mismatch");
-    //     assertEq(uint8(state), uint8(SmartLottery.LotteryState.OPEN), "State mismatch");
-    //     assertEq(entrantsCount, 0, "Entrants should be empty");
-    //     assertEq(prizePool, 0, "Prize pool should be 0");
-    // }
-
-    function testLotteryIsOpen() public {}
-
-    function testCanEnterLottery() public {
+    function testRevertsIfInvalidTicketPrice() public {
         vm.startPrank(user);
-        lottery.createLottery(LOTTERY_ID, TICKET_PRICE, block.timestamp + 1 days);
+        vm.expectRevert(SmartLottery.SmartLottery__InvalidTicketPrice.selector);
+        lottery.createLottery(LOTTERY_ID, INVALID_PRICE, block.timestamp + 1 days);
+    }
+
+    function testRevertsIfLotteryExpired() public lotteryCreated {
+        vm.startPrank(user);
+        vm.warp(block.timestamp + 1 days + 1 seconds);
+        vm.expectRevert(SmartLottery.SmartLottery__LotteryExpired.selector);
+        lottery.enterLottery{value: TICKET_PRICE}(LOTTERY_ID);
+        vm.stopPrank();
+    }
+
+    function testCanCreateLottery() public {
+        vm.startPrank(user);
+        uint256 duration = 1 days;
+        uint256 expectedExpiration = block.timestamp + duration;
+        lottery.createLottery(LOTTERY_ID, TICKET_PRICE, duration);
+        vm.stopPrank();
+        (uint256 ticketPrice, uint256 actualExpiration, uint256 numEntrants,, uint256 prizePool) =
+            lottery.getLottery(LOTTERY_ID);
+
+        assertEq(ticketPrice, TICKET_PRICE);
+        assertEq(actualExpiration, expectedExpiration, "Expiration timestamp mismatch");
+        assertEq(numEntrants, 0);
+        assertEq(prizePool, 0);
+    }
+
+    function testRevertsIfNotEnoughFunds() public lotteryCreated {
+        vm.startPrank(user2);
+        vm.deal(user2, STARTING_BALANCE);
+        vm.expectRevert(SmartLottery.SmartLottery__NotEnoughFunds.selector);
+        lottery.enterLottery{value: INVALID_PRICE}(LOTTERY_ID);
+        vm.stopPrank();
+    }
+
+    function testCanEnterLottery() public lotteryCreated {
+        vm.startPrank(user2);
+        vm.deal(user2, STARTING_BALANCE);
         lottery.enterLottery{value: TICKET_PRICE}(LOTTERY_ID);
         vm.stopPrank();
 
         (
             , // ticketPrice
             , // expiration
-            , // operator
-            , // winner
+            uint256 numEntrants,
             , // state
-            uint256 entrantsCount,
             uint256 prizePool
         ) = lottery.getLottery(LOTTERY_ID);
 
-        address payable[] memory entrants = lottery.getEntrants(LOTTERY_ID);
+        address[] memory entrants = lottery.getEntrants(LOTTERY_ID);
 
-        assertEq(prizePool, TICKET_PRICE, "Prize pool should be equal to the ticket price");
-        assertEq(entrantsCount, 1, "Entrants count should be 1");
-        assertEq(entrants[0], user, "Entrant should be the user");
+        assertEq(prizePool, TICKET_PRICE);
+        assertEq(numEntrants, 1);
+        assertEq(entrants[0], user2);
+    }
+
+    function testRaffleAddsPlayerWhenTheyEnter() public lotteryCreated {
+        vm.startPrank(user2);
+        vm.deal(user2, STARTING_BALANCE);
+        lottery.enterLottery{value: TICKET_PRICE}(LOTTERY_ID);
+        address playerEntered = lottery.getEntrants(LOTTERY_ID)[0];
+        vm.stopPrank();
+        assertEq(playerEntered, user2, "Player should be user2");
     }
 }
